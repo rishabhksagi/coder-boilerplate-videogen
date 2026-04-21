@@ -1,0 +1,10 @@
+{
+  "fps": 30,
+  "quality": "standard",
+  "format": "mp4",
+  "workers": 1,
+  "maxDurationSeconds": 30,
+  "maxResolution": { "width": 1280, "height": 720 },
+  "pauseDevServerDuringRender": true,
+  "minFreeDiskMb": 1024
+}

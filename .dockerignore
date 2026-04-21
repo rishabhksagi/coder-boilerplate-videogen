@@ -1,0 +1,10 @@
+.git
+.gitignore
+.dockerignore
+node_modules
+renders/
+work-*/
+*.mp4
+*.webm
+.DS_Store
+README.md

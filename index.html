@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Video</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <!--
+      Hyperframes preview runtime — enables data-composition-src sub-compositions.
+      Safe to leave in for renders; the engine ignores it during BeginFrame capture.
+    -->
+    <script
+      data-hyperframes-preview-runtime="1"
+      src="https://cdn.jsdelivr.net/npm/@hyperframes/core@0.2.5/dist/hyperframe.runtime.iife.js"
+    ></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1280px; height: 720px; overflow: hidden;
+        background: #000;
+        font-family: 'Inter', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      #root {
+        position: relative;
+        width: 1280px; height: 720px;
+        overflow: hidden;
+        background: #0a0e27;
+      }
+
+      /* ── z-index convention (DO NOT change without reason) ──────────────
+         1   bg-layer       — base gradient, glow, grain, sweeps
+         10  scenes         — actual content
+         50  persistent     — wordmark, version label, section index
+         80  modals/popups  — reserved
+      ─────────────────────────────────────────────────────────────────────── */
+
+      #bg-layer { position: absolute; inset: 0; z-index: 1; }
+      #bg-base {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse at 50% 50%, #1a1f4a 0%, #0a0e27 70%);
+      }
+      #bg-glow {
+        position: absolute; top: 50%; left: 50%;
+        width: 800px; height: 480px; border-radius: 50%;
+        background: radial-gradient(ellipse, rgba(122, 107, 255, 0.18), transparent 70%);
+        filter: blur(20px);
+      }
+
+      .scene { position: absolute; inset: 0; z-index: 10; opacity: 0; }
+      .scene-flex { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+      #persistent { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
+      #wordmark {
+        position: absolute; top: 32px; left: 48px;
+        font-size: 22px; font-weight: 600; color: #fff;
+        opacity: 0;
+      }
+      #version-label {
+        position: absolute; bottom: 24px; right: 32px;
+        font-family: 'Inter', monospace; font-size: 11px; color: rgba(255, 255, 255, 0.4);
+        opacity: 0;
+      }
+
+      /* Scene 1 content */
+      #s1-hero {
+        font-weight: 900; font-size: 140px; color: #7a6bff;
+        letter-spacing: -0.02em; line-height: 1;
+      }
+      #s1-hero .char { display: inline-block; }
+      #s1-tag {
+        margin-top: 16px;
+        font-size: 18px; color: rgba(255, 255, 255, 0.7);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="3"
+      data-width="1280"
+      data-height="720"
+    >
+      <!-- z:1 — Background layer (persists across all scenes) -->
+      <div id="bg-layer" class="clip" data-start="0" data-duration="3" data-track-index="1">
+        <div id="bg-base"></div>
+        <div id="bg-glow"></div>
+      </div>
+
+      <!-- z:10 — Scene 1: Hero -->
+      <div id="scene-1" class="scene scene-flex clip" data-start="0" data-duration="3" data-track-index="2">
+        <div id="s1-hero">
+          <span class="char">H</span><span class="char">e</span><span class="char">l</span><span class="char">l</span><span class="char">o</span>
+        </div>
+        <div id="s1-tag">Edit index.html to make your own video.</div>
+      </div>
+
+      <!-- z:50 — Persistent overlay -->
+      <div id="persistent" class="clip" data-start="0.1" data-duration="2.9" data-track-index="5">
+        <div id="wordmark">My Video</div>
+        <div id="version-label">v1.0</div>
+      </div>
+    </div>
+
+    <script>
+      // ── Main timeline ───────────────────────────────────────────────────
+      // Always paused — preview-proxy.js's autoplay wrapper plays it.
+      // Render mode keeps it paused so BeginFrame can seek deterministically.
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      // Persistent overlay reveal
+      tl.fromTo('#wordmark', { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 0.1);
+      tl.fromTo('#version-label', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.3);
+
+      // Scene 1 fade in / out
+      tl.fromTo('#scene-1', { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.1);
+      tl.to('#scene-1', { opacity: 0, duration: 0.4, ease: 'power2.in' }, 2.4);
+
+      // Scene 1 internal: char stagger
+      tl.fromTo(
+        '#s1-hero .char',
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'expo.out' },
+        0.3
+      );
+      tl.fromTo('#s1-tag', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 0.9);
+
+      window.__timelines['main'] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "video-gen-project",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'video-gen has no build step (Hyperframes compositions are raw HTML)'",
+    "render": "hyperframes render --workers 1 --fps 30 --quality standard",
+    "lint": "hyperframes lint",
+    "start": "node preview-proxy.js"
+  },
+  "dependencies": {
+    "hyperframes": "0.4.4"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
