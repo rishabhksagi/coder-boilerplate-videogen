@@ -148,6 +148,38 @@ the 1280×720 frame:
 Reference `.hyperframes-skills/registry/examples/swiss-grid` and
 `/vignelli` for layout discipline.
 
+### E2. Responsive layout (MUST)
+
+Every composition renders at three aspects: **landscape 1280×720**, **portrait
+720×1280**, **square 1024×1024**. The user toggles these in the editor preview
+header AND picks one at export time. The boilerplate `index.html` ships with
+top-level `@media` rules that resize `html, body, #root` for portrait + square
+— **leave those rules in place**. For every scene/element you author, also add
+matching `@media` overrides that reflow the layout (not just shrink it):
+
+```css
+/* landscape default — side-by-side hero + tagline */
+.hero-row { display: flex; flex-direction: row; gap: 48px; align-items: center; }
+#hero { font-size: 140px; }
+#tag  { font-size: 22px; }
+
+/* portrait 9:16 — stack vertically, smaller fonts */
+@media (max-aspect-ratio: 1/1) {
+  .hero-row { flex-direction: column; gap: 24px; }
+  #hero { font-size: 96px; }
+  #tag  { font-size: 18px; }
+}
+
+/* square 1:1 — balanced, slight shrink */
+@media (aspect-ratio: 1/1) {
+  #hero { font-size: 120px; }
+  #tag  { font-size: 20px; }
+}
+```
+
+Mental check before finishing: walk through each aspect — content should fill
+the frame edge-to-edge, no black bars, no overflow, no overlap.
+
 ### F. Use the registry first
 
 `.hyperframes-skills/registry/` ships **39 production-quality blocks** + **3

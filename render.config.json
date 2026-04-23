@@ -3,8 +3,8 @@
   "quality": "standard",
   "format": "mp4",
   "workers": 1,
-  "maxDurationSeconds": 30,
-  "maxResolution": { "width": 1280, "height": 720 },
+  "maxDurationSeconds": 40,
+  "maxResolution": { "width": 1280, "height": 1280 },
   "pauseDevServerDuringRender": true,
   "minFreeDiskMb": 1024
 }

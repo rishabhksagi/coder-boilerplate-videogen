@@ -32,6 +32,18 @@
         background: #0a0e27;
       }
 
+      /* ── Responsive aspect overrides (MUST keep) ───────────────────────
+         Render targets: 1280×720 (landscape), 720×1280 (portrait), 1024×1024 (square).
+         When authoring scenes, ALWAYS add matching @media blocks for
+         portrait + square that reflow content (stack vs side-by-side,
+         smaller fonts, tighter gaps). Do not just resize the canvas. */
+      @media (max-aspect-ratio: 1/1) {
+        html, body, #root { width: 720px; height: 1280px; }
+      }
+      @media (aspect-ratio: 1/1) {
+        html, body, #root { width: 1024px; height: 1024px; }
+      }
+
       /* ── z-index convention (DO NOT change without reason) ──────────────
          1   bg-layer       — base gradient, glow, grain, sweeps
          10  scenes         — actual content
@@ -66,7 +78,7 @@
         opacity: 0;
       }
 
-      /* Scene 1 content */
+      /* Scene 1 content — landscape (1280×720) defaults */
       #s1-hero {
         font-weight: 900; font-size: 140px; color: #7a6bff;
         letter-spacing: -0.02em; line-height: 1;
@@ -75,6 +87,23 @@
       #s1-tag {
         margin-top: 16px;
         font-size: 18px; color: rgba(255, 255, 255, 0.7);
+      }
+
+      /* ── Worked reflow example: same scene, three layouts ────────────────
+         Portrait (720×1280) — narrower, taller. Shrink hero so it fits.
+         Square (1024×1024) — balanced. Slight shrink for breathing room.
+         Use this same pattern for every scene/element you author. */
+      @media (max-aspect-ratio: 1/1) {
+        #s1-hero { font-size: 96px; }
+        #s1-tag  { font-size: 16px; margin-top: 14px; }
+        #wordmark      { top: 24px; left: 24px; font-size: 18px; }
+        #version-label { bottom: 18px; right: 20px; }
+      }
+      @media (aspect-ratio: 1/1) {
+        #s1-hero { font-size: 120px; }
+        #s1-tag  { font-size: 18px; }
+        #wordmark      { top: 28px; left: 32px; }
+        #version-label { bottom: 22px; right: 26px; }
       }
     </style>
   </head>

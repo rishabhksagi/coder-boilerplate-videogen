@@ -258,6 +258,29 @@ async function handleHealth(_req, res) {
 // Allowed export formats. The first entry is the default if the caller omits format.
 const ALLOWED_FORMATS = ['mp4', 'webm', 'mov'];
 
+// applyRootDims rewrites the data-width / data-height attributes on the first
+// element with id="root" so Hyperframes renders at the requested viewport.
+// The CLI does NOT accept --width/--height flags — viewport size lives entirely
+// on the composition's root element. Returns the mutated HTML (or the original
+// if no override was requested).
+function applyRootDims(html, width, height) {
+  if (!width && !height) return html;
+  return html.replace(/<([a-zA-Z][^>\s]*)([^>]*\bid=["']root["'][^>]*)>/, (match, tag, attrs) => {
+    let next = attrs;
+    if (width) {
+      next = /\bdata-width=["'][^"']*["']/.test(next)
+        ? next.replace(/\bdata-width=["'][^"']*["']/, `data-width="${width}"`)
+        : `${next} data-width="${width}"`;
+    }
+    if (height) {
+      next = /\bdata-height=["'][^"']*["']/.test(next)
+        ? next.replace(/\bdata-height=["'][^"']*["']/, `data-height="${height}"`)
+        : `${next} data-height="${height}"`;
+    }
+    return `<${tag}${next}>`;
+  });
+}
+
 async function handleRender(req, res) {
   let body;
   try { body = await readJsonBody(req); } catch (e) {
@@ -296,6 +319,30 @@ async function handleRender(req, res) {
   const validation = await validateComposition();
   if (!validation.ok) return jsonRes(res, 422, { error: validation.error });
 
+  // If the caller requested a different viewport, mutate index.html's #root
+  // data-width / data-height in place. Save the original so we can restore on
+  // exit (success, error, or client disconnect). Hyperframes reads viewport
+  // size off the root element — there are NO --width / --height CLI flags.
+  const indexPath = path.join(ROOT, 'index.html');
+  let originalIndexHtml = null;
+  if (requestedWidth || requestedHeight) {
+    try {
+      originalIndexHtml = await fsp.readFile(indexPath, 'utf8');
+      const mutated = applyRootDims(originalIndexHtml, requestedWidth, requestedHeight);
+      await fsp.writeFile(indexPath, mutated, 'utf8');
+    } catch (e) {
+      return jsonRes(res, 500, { error: 'failed to apply viewport override: ' + e.message });
+    }
+  }
+
+  let restored = false;
+  async function restoreIndex() {
+    if (restored || originalIndexHtml === null) return;
+    restored = true;
+    try { await fsp.writeFile(indexPath, originalIndexHtml, 'utf8'); }
+    catch (e) { console.error('[render] failed to restore index.html', e); }
+  }
+
   const outPath = path.join(RENDERS_DIR, `${renderId}.${format}`);
   res.writeHead(200, { 'content-type': 'application/x-ndjson' });
   ndjson(res, {
@@ -315,11 +362,6 @@ async function handleRender(req, res) {
     '--format', format,
     '--output', outPath,
   ];
-  // Pass viewport overrides only when the caller specified them. Hyperframes
-  // falls back to the composition's data-width/data-height otherwise, so the
-  // composition's @media reflow still works for the default case.
-  if (requestedWidth) renderArgs.push('--width', String(requestedWidth));
-  if (requestedHeight) renderArgs.push('--height', String(requestedHeight));
   ndjson(res, { type: 'started', cmd: 'npx ' + renderArgs.join(' ') });
 
   const child = spawn('npx', renderArgs, { cwd: ROOT, env: process.env });
@@ -360,7 +402,8 @@ async function handleRender(req, res) {
     }
   });
 
-  child.on('exit', (code) => {
+  child.on('exit', async (code) => {
+    await restoreIndex();
     if (code !== 0) {
       ndjson(res, { type: 'error', message: `render exited with code ${code}` });
       return res.end();
@@ -380,7 +423,10 @@ async function handleRender(req, res) {
     res.end();
   });
 
-  req.on('close', () => { if (!child.killed) child.kill('SIGTERM'); });
+  req.on('close', async () => {
+    if (!child.killed) child.kill('SIGTERM');
+    await restoreIndex();
+  });
 }
 
 // findArtifact locates the rendered file for a renderId across all allowed
